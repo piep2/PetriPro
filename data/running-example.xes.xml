@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XES version 1.0 -->
+<!-- Created by Fluxicon Disco (fluxicon.com/disco) -->
+<!-- (c) 2020 by Fluxicon BV, Bomanshof 259, 5611 NS Eindhoven, The Netherlands -->
+<log xes.version="1.0" xmlns="http://www.xes-standard.org" xes.creator="Fluxicon Disco">
+	<extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
+	<extension name="Lifecycle" prefix="lifecycle" uri="http://www.xes-standard.org/lifecycle.xesext"/>
+	<extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
+	<global scope="trace">
+		<string key="concept:name" value="name"/>
+		<string key="variant" value="string"/>
+		<int key="variant-index" value="0"/>
+	</global>
+	<global scope="event">
+		<string key="concept:name" value="name"/>
+		<string key="lifecycle:transition" value="transition"/>
+		<date key="time:timestamp" value="2020-10-13T10:18:25.221+02:00"/>
+		<string key="Activity" value="string"/>
+	</global>
+	<classifier name="Activity" keys="Activity"/>
+	<string key="lifecycle:model" value="standard"/>
+	<string key="creator" value="Fluxicon Disco"/>
+	<string key="library" value="Fluxicon Octane"/>
+	<trace>
+		<string key="concept:name" value="1"/>
+		<string key="variant" value="Variant 1"/>
+		<int key="variant-index" value="1"/>
+		<string key="creator" value="Fluxicon Disco"/>
+		<event>
+			<string key="concept:name" value="register request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-30T11:02:00.000+01:00"/>
+			<string key="Activity" value="register request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine thoroughly"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-31T10:06:00.000+01:00"/>
+			<string key="Activity" value="examine thoroughly"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-05T15:12:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T11:18:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="reject request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-07T14:24:00.000+01:00"/>
+			<string key="Activity" value="reject request"/>
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="2"/>
+		<string key="variant" value="Variant 2"/>
+		<int key="variant-index" value="2"/>
+		<string key="creator" value="Fluxicon Disco"/>
+		<event>
+			<string key="concept:name" value="register request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-30T11:32:00.000+01:00"/>
+			<string key="Activity" value="register request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-30T12:12:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine casually"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-30T14:16:00.000+01:00"/>
+			<string key="Activity" value="examine casually"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-05T11:22:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="pay compensation"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-08T12:05:00.000+01:00"/>
+			<string key="Activity" value="pay compensation"/>
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="3"/>
+		<string key="variant" value="Variant 3"/>
+		<int key="variant-index" value="3"/>
+		<string key="creator" value="Fluxicon Disco"/>
+		<event>
+			<string key="concept:name" value="register request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-30T14:32:00.000+01:00"/>
+			<string key="Activity" value="register request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine casually"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-30T15:06:00.000+01:00"/>
+			<string key="Activity" value="examine casually"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2010-12-30T16:34:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T09:18:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="reinitiate request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T12:18:00.000+01:00"/>
+			<string key="Activity" value="reinitiate request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine thoroughly"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T13:06:00.000+01:00"/>
+			<string key="Activity" value="examine thoroughly"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-08T11:43:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-09T09:55:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="pay compensation"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-15T10:45:00.000+01:00"/>
+			<string key="Activity" value="pay compensation"/>
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="5"/>
+		<string key="variant" value="Variant 4"/>
+		<int key="variant-index" value="4"/>
+		<string key="creator" value="Fluxicon Disco"/>
+		<event>
+			<string key="concept:name" value="register request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T09:02:00.000+01:00"/>
+			<string key="Activity" value="register request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine casually"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-07T10:16:00.000+01:00"/>
+			<string key="Activity" value="examine casually"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-08T11:22:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-10T13:28:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="reinitiate request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-11T16:18:00.000+01:00"/>
+			<string key="Activity" value="reinitiate request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-14T14:33:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine casually"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-16T15:50:00.000+01:00"/>
+			<string key="Activity" value="examine casually"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-19T11:18:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="reinitiate request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-20T12:48:00.000+01:00"/>
+			<string key="Activity" value="reinitiate request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine casually"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-21T09:06:00.000+01:00"/>
+			<string key="Activity" value="examine casually"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-21T11:34:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-23T13:12:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="reject request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-24T14:56:00.000+01:00"/>
+			<string key="Activity" value="reject request"/>
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="4"/>
+		<string key="variant" value="Variant 5"/>
+		<int key="variant-index" value="5"/>
+		<string key="creator" value="Fluxicon Disco"/>
+		<event>
+			<string key="concept:name" value="register request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T15:02:00.000+01:00"/>
+			<string key="Activity" value="register request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-07T12:06:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine thoroughly"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-08T14:43:00.000+01:00"/>
+			<string key="Activity" value="examine thoroughly"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-09T12:02:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="reject request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-12T15:44:00.000+01:00"/>
+			<string key="Activity" value="reject request"/>
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="6"/>
+		<string key="variant" value="Variant 6"/>
+		<int key="variant-index" value="6"/>
+		<string key="creator" value="Fluxicon Disco"/>
+		<event>
+			<string key="concept:name" value="register request"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T15:02:00.000+01:00"/>
+			<string key="Activity" value="register request"/>
+		</event>
+		<event>
+			<string key="concept:name" value="examine casually"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-06T16:06:00.000+01:00"/>
+			<string key="Activity" value="examine casually"/>
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-07T16:22:00.000+01:00"/>
+			<string key="Activity" value="check ticket"/>
+		</event>
+		<event>
+			<string key="concept:name" value="decide"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-07T16:52:00.000+01:00"/>
+			<string key="Activity" value="decide"/>
+		</event>
+		<event>
+			<string key="concept:name" value="pay compensation"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<date key="time:timestamp" value="2011-01-16T11:47:00.000+01:00"/>
+			<string key="Activity" value="pay compensation"/>
+		</event>
+	</trace>
+</log>
