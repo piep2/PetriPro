@@ -5,6 +5,7 @@ import random as rng
 
 class Node:
     def __init__(self, canvas, x, y, text, shape):
+        self.selected = False
         self.canvas = canvas
         self.x = x
         self.y = y
@@ -18,10 +19,10 @@ class Node:
         elif self.shape == "rectangle":
             w = (self.bbox[2] - self.bbox[0])
             h = (self.bbox[3] - self.bbox[1])
-            self.left = (self.x - w/2, self.y)
-            self.top = (self.x, self.y + h/2)
-            self.right = (self.x + w/2, self.y)
-            self.bottom = (self.x, self.y - h/2)
+            self.left = (self.x - w/2 - 10, self.y)
+            self.top = (self.x, self.y + h/2 + 10)
+            self.right = (self.x + w/2 + 10, self.y)
+            self.bottom = (self.x, self.y - h/2 - 10)
             self.id = self.canvas.create_rectangle(self.bbox[0]-10, self.bbox[1]-10, self.bbox[2]+10, self.bbox[3]+10, fill='white')
             
         self.canvas.tag_raise(self.text_id)
@@ -40,15 +41,21 @@ class Node:
 
         w = (self.bbox[2] - self.bbox[0])
         h = (self.bbox[3] - self.bbox[1])
-        self.left = (self.x - w/2, self.y)
-        self.top = (self.x, self.y + h/2)
-        self.right = (self.x + w/2, self.y)
-        self.bottom = (self.x, self.y - h/2)
+        self.left = (self.x - w/2 - 10, self.y)
+        self.top = (self.x, self.y + h/2 + 10)
+        self.right = (self.x + w/2 + 10, self.y)
+        self.bottom = (self.x, self.y - h/2 - 10)
         self.canvas.update()
         
 
     def click(self, event):
-        print(self.text)
+        if self.selected:
+            self.canvas.itemconfig(self.id, outline="black")
+            self.selected=False
+        else:
+            self.canvas.itemconfig(self.id, outline="blue")
+            self.selected=True
+
 
 class Arrow:
     def __init__(self, canvas, node1, node2):
@@ -65,8 +72,8 @@ class Arrow:
             x1 = self.node1.x + self.node1.r * math.cos(angle)
             y1 = self.node1.y + self.node1.r * math.sin(angle)
         else:
-            left = dx >= 0
-            top = dy <= 0
+            left = dx <= 0
+            top = dy >= 0
             side = abs(dx) >= abs(dy)
             if side and left:
                 x1 = self.node1.left[0]
@@ -83,22 +90,25 @@ class Arrow:
 
 
         if self.node2.shape == "circle":
-            x2 = self.node2.x + self.node2.r * math.cos(angle)
-            y2 = self.node2.y + self.node2.r * math.sin(angle)
+            x2 = self.node2.x - self.node2.r * math.cos(angle)
+            y2 = self.node2.y - self.node2.r * math.sin(angle)
         else:
-            left = dx >= 0
-            top = dy <= 0
+            left = dx <= 0
+            left = not left
+            top = dy >= 0
+            top = not top
             side = abs(dx) >= abs(dy)
-            if not (side and left):
+
+            if side and left:
                 x2 = self.node2.left[0]
                 y2 = self.node2.left[1]
-            elif not (side and not left):
+            elif side and not left:
                 x2 = self.node2.right[0]
                 y2 = self.node2.right[1]
-            elif not (not side and top):
+            elif not side and top:
                 x2 = self.node2.top[0]
                 y2 = self.node2.top[1]
-            elif not (not side and not top):
+            elif not side and not top:
                 x2 = self.node2.bottom[0]
                 y2 = self.node2.bottom[1]
 
