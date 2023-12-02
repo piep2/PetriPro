@@ -6,6 +6,7 @@ import random as rng
 class Node:
     def __init__(self, canvas, x, y, text, shape):
         self.selected = False
+        self.active = False
         self.canvas = canvas
         self.x = x
         self.y = y
@@ -49,7 +50,10 @@ class Node:
         
 
     def click(self, event):
-        if self.selected:
+        if self.selected and self.active:
+            self.canvas.itemconfig(self.id, outline="red")
+            self.selected=False
+        elif self.selected:
             self.canvas.itemconfig(self.id, outline="black")
             self.selected=False
         else:
@@ -115,10 +119,94 @@ class Arrow:
         self.canvas.coords(self.id, x1, y1, x2, y2)
 
 class App:
+    def isActive(self, trans):
+        active = True
+        counter = 0
+
+        # check all places of incoming arcs whether they satisfy the token count (arc weight)
+        while active and counter < len(trans.in_arcs):
+            placeName = str(list(trans.in_arcs)[counter]).split("->")[0]
+            if self.places[placeName]["tokens"] < list(trans.in_arcs)[counter].weight:
+                active = False
+            counter += 1
+
+        return active
+
+    def step(self):
+        actives = []
+
+        # First, iterate through all transitions and determine all that COULD be fired
+        for trans in self.transitions:
+            active = self.isActive(self.transitions[trans]["pm4py_object"])
+
+            if active:
+                actives.append(self.transitions[trans]["pm4py_object"])
+
+        # fire as many transitions as possible
+        while len(actives) > 0:
+            # choose a random transition
+            prioritized = [trans for trans in actives if self.transitions[str(trans)]["gui_object"].selected]
+
+            if prioritized:
+                chosenTrans = rng.choice(prioritized)
+            else:
+                chosenTrans = rng.choice(actives)
+            actives.remove(chosenTrans)
+
+            # Then, iterate through all connected places and consume their tokens
+            for inArc in chosenTrans.in_arcs:
+                placeName = str(inArc).split("->")[0]
+                self.places[placeName]["tokens"] -= inArc.weight
+                self.canvas.itemconfig( self.places[placeName]["gui_object"].text_id, 
+                                        text=str(self.places[placeName]["tokens"]) if self.places[placeName]["tokens"] > 0 else "")
+
+                # After consuming the tokens, the remaining transitions connected to this place need to be reevaluated (if they are still active, since the token count has changed)
+                for outArc in self.places[placeName]["pm4py_object"].out_arcs:
+                    transName = str(outArc).split("->")[1]
+                    otherTrans = self.transitions[transName]["pm4py_object"]
+                    if transName != str(chosenTrans) and not self.isActive(otherTrans) and otherTrans in actives:
+                        actives.remove(otherTrans)
+
+                # Finally, new tokens are created for all outgoing places connected to the firing transition
+                for outArc in chosenTrans.out_arcs:
+                    placeName = str(outArc).split("->")[1]
+                    self.places[placeName]["tokens"] += outArc.weight
+                    self.canvas.itemconfig( self.places[placeName]["gui_object"].text_id, 
+                                            text=str(self.places[placeName]["tokens"]) if self.places[placeName]["tokens"] > 0 else "")
+
+        # color the new actives and refresh the canvas with token counts
+        self.colorActives()
+        self.canvas.update()
+
+    def colorActives(self):
+        actives = []
+        
+        for trans in self.transitions:
+            self.transitions[trans]["gui_object"].selected = False
+            active = self.isActive(self.transitions[trans]["pm4py_object"])
+
+            if active:
+                actives.append(self.transitions[trans]["pm4py_object"])
+                self.transitions[trans]["gui_object"].active = True
+                self.canvas.itemconfig(self.transitions[trans]["gui_object"].id, outline="red")
+            else:
+                self.transitions[trans]["gui_object"].active = False
+                self.canvas.itemconfig(self.transitions[trans]["gui_object"].id, outline="black")
+
+
+        self.canvas.update()
+
+            
+            
+                
+
     def __init__(self, places, transitions, arcs):
         self.root = tk.Tk()
         self.canvas = tk.Canvas(self.root, width=1920, height=1080)
         self.canvas.pack()
+
+        self.play_button = tk.Button(self.root, text="plays", width=10, height=5, bd='10', command=self.step)
+        self.play_button.place(x=40, y=100)
 
         self.places = places
         for place in self.places:
@@ -126,7 +214,7 @@ class App:
         
         self.transitions = transitions
         for trans in self.transitions:
-            self.transitions[trans]["gui_object"] = Node(self.canvas, rng.randint(100, 800), rng.randint(100, 800), trans, "rectangle")
+            self.transitions[trans]["gui_object"] = Node(self.canvas, rng.randint(100, 800), rng.randint(100, 800), trans.split("'")[1], "rectangle")
 
         self.arcs = []
         for arc in arcs:
@@ -134,6 +222,9 @@ class App:
             dst = self.transitions[arc["dest"]]["gui_object"] if arc["dest"] in self.transitions.keys() else self.places[arc["dest"]]["gui_object"]
 
             self.arcs.append(Arrow(self.canvas, src, dst))
+
+            
+        self.colorActives()
 
         self.root.after(100, self.update)
         self.root.mainloop()
