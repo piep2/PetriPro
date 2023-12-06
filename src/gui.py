@@ -2,6 +2,7 @@ import tkinter as tk
 import math
 import re
 import random as rng
+import numpy as np
 
 class Node:
     def __init__(self, canvas, x, y, text, shape):
@@ -182,46 +183,104 @@ class App:
         actives = []
         
         for trans in self.transitions:
-            self.transitions[trans]["gui_object"].selected = False
-            active = self.isActive(self.transitions[trans]["pm4py_object"])
+            if self.isAlreadyPlaced(trans):
+                self.transitions[trans]["gui_object"].selected = False
+                active = self.isActive(self.transitions[trans]["pm4py_object"])
 
-            if active:
-                actives.append(self.transitions[trans]["pm4py_object"])
-                self.transitions[trans]["gui_object"].active = True
-                self.canvas.itemconfig(self.transitions[trans]["gui_object"].id, outline="red")
-            else:
-                self.transitions[trans]["gui_object"].active = False
-                self.canvas.itemconfig(self.transitions[trans]["gui_object"].id, outline="black")
+                if active:
+                    actives.append(self.transitions[trans]["pm4py_object"])
+                    self.transitions[trans]["gui_object"].active = True
+                    self.canvas.itemconfig(self.transitions[trans]["gui_object"].id, outline="red")
+                else:
+                    self.transitions[trans]["gui_object"].active = False
+                    self.canvas.itemconfig(self.transitions[trans]["gui_object"].id, outline="black")
 
 
         self.canvas.update()
 
             
-            
+    def getPlacements(self, currentNode, col):
+        print(currentNode, col)
+        if col not in self.placements.keys():
+            self.placements[col] = []
+
+        self.placements[col].append(str(currentNode))
+        for outArc in currentNode.out_arcs:
+            outName = str(outArc).split("->")[1]
+            if outName in self.transitions.keys():
+                outNode = self.transitions[outName]["pm4py_object"]
+            else:
+                outNode = self.places[outName]["pm4py_object"]
+
+            if not self.isAlreadyPlaced(outName):
+                self.getPlacements(outNode, col+1)
+
+    def correctTransitionPlacement(self):
+        for trans in self.transitions:
+            if self.isAlreadyPlaced(trans):
+                x, _ = self.getPlacement(trans)
+                #newX = (np.average([self.getPlacement(str(arc).split("->")[0])[0] for arc in self.transitions[trans]["pm4py_object"].in_arcs]) + 
+                #np.average([self.getPlacement(str(arc).split("->")[1])[0] for arc in self.transitions[trans]["pm4py_object"].out_arcs])) / 2
+                newX = np.min([self.getPlacement(str(arc).split("->")[0])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].in_arcs if self.isAlreadyPlaced(str(x).split("->")[0])]] + [self.getPlacement(str(arc).split("->")[1])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].out_arcs if self.isAlreadyPlaced(str(x).split("->")[1])]]) + 1
+                
+                self.placements[x].remove(trans)
+                self.placements[int(newX)].append(trans)
+
+    def getPlacement(self, nodeName):
+        col = 0
+        while nodeName not in self.placements[col]:
+            col += 1
+
+        return col, self.placements[col].index(nodeName)
+    
+    def isAlreadyPlaced(self, nodeName):
+        col = 0
+        while col in self.placements.keys() and nodeName not in self.placements[col]:
+            col += 1
+
+        return col in self.placements.keys()
                 
 
     def __init__(self, places, transitions, arcs):
+        self.placements = dict()
+
         self.root = tk.Tk()
         self.canvas = tk.Canvas(self.root, width=1920, height=1080)
         self.canvas.pack()
 
-        self.play_button = tk.Button(self.root, text="plays", width=10, height=5, bd='10', command=self.step)
+        self.play_button = tk.Button(self.root, text="plays", width=10, height=5, bd='50', command=self.step)
         self.play_button.place(x=40, y=100)
 
+
+
         self.places = places
-        for place in self.places:
-            self.places[place]["gui_object"] = Node(self.canvas, rng.randint(100, 800), rng.randint(100, 800), str(self.places[place]["tokens"]) if self.places[place]["tokens"] > 0 else "", "circle")
-        
         self.transitions = transitions
+
+        self.offsetX = 100
+        self.offsetY = 100
+        self.distanceFactorX = 130
+        self.distanceFactorY = 100
+
+        self.getPlacements(self.places["start"]["pm4py_object"], 0)
+        self.correctTransitionPlacement()
+        
+        for place in self.places:
+            if self.isAlreadyPlaced(place):
+                x, y = self.getPlacement(place)
+                self.places[place]["gui_object"] = Node(self.canvas, x * self.distanceFactorX + self.offsetX, y * self.distanceFactorY + self.offsetY, str(self.places[place]["tokens"]) if self.places[place]["tokens"] > 0 else "", "circle")
+        
         for trans in self.transitions:
-            self.transitions[trans]["gui_object"] = Node(self.canvas, rng.randint(100, 800), rng.randint(100, 800), trans.split("'")[1], "rectangle")
+            if self.isAlreadyPlaced(trans):
+                x, y = self.getPlacement(trans)
+                self.transitions[trans]["gui_object"] = Node(self.canvas, x * self.distanceFactorX + self.offsetX, y * self.distanceFactorY + self.offsetY, trans.split("'")[1], "rectangle")
 
         self.arcs = []
         for arc in arcs:
             src = self.transitions[arc["source"]]["gui_object"] if arc["source"] in self.transitions.keys() else self.places[arc["source"]]["gui_object"]
             dst = self.transitions[arc["dest"]]["gui_object"] if arc["dest"] in self.transitions.keys() else self.places[arc["dest"]]["gui_object"]
 
-            self.arcs.append(Arrow(self.canvas, src, dst))
+            if src is not None and dst is not None:
+                self.arcs.append(Arrow(self.canvas, src, dst))
 
             
         self.colorActives()
@@ -234,8 +293,38 @@ class App:
             arc.update()
         self.root.after(100, self.update)
 
+import pm4py
+import pandas as pd
+import os
+if __name__ == "__main__":
+    test = os.getcwd()
+
+    dataframe = pd.read_csv("data/running-example.csv", sep=';')
+    dataframe["Timestamp"] = pd.to_datetime(dataframe["Timestamp"], format="%d-%m-%Y:%H.%M")
+    dataframe = pm4py.format_dataframe(dataframe, case_id='Case ID', activity_key='Activity', timestamp_key='Timestamp')
+    event_log = pm4py.convert_to_event_log(dataframe)
+    event_log = pm4py.read_xes("data/Road_Traffic_Fine_Management_Process.xes.gz")
+    petri, im, fm = pm4py.discover_petri_net_alpha(event_log)
+
+    placesDict = dict()
+    for place in petri.places:
+        placesDict[str(place)] = {
+            "pm4py_object": place,
+            "gui_object": None,
+            "tokens": dict(im)[place] if place in dict(im).keys() else 0
+        }
 
 
+    transDict = dict()
+    for trans in petri.transitions:
+        transDict[str(trans)] = {
+            "pm4py_object": trans,
+            "gui_object": None,
+        }
+
+    arcs = [{"source": str(x).split("->")[0], "dest": str(x).split("->")[1]} for x in petri.arcs]
+
+    App(placesDict.copy(), transDict.copy(), arcs.copy())
 
 
 
