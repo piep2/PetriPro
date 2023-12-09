@@ -5,7 +5,7 @@ import random as rng
 import numpy as np
 
 class Node:
-    def __init__(self, canvas, x, y, text, shape):
+    def __init__(self, canvas, x, y, text, nodeName, shape):
         self.selected = False
         self.active = False
         self.canvas = canvas
@@ -15,9 +15,12 @@ class Node:
         self.shape = shape
         self.text_id = self.canvas.create_text(self.x, self.y, text=self.text, fill="black")
         self.bbox = self.canvas.bbox(self.text_id)
+
+        fill_color = "white" if nodeName not in ["start", "end"] else "#D7D7D7"
+
         if self.shape == "circle":
             self.r = 25
-            self.id = self.canvas.create_oval(self.x-self.r, self.y-self.r, self.x+self.r, self.y+self.r, fill='white')
+            self.id = self.canvas.create_oval(self.x-self.r, self.y-self.r, self.x+self.r, self.y+self.r, fill=fill_color)
         elif self.shape == "rectangle":
             w = (self.bbox[2] - self.bbox[0])
             h = (self.bbox[3] - self.bbox[1])
@@ -25,7 +28,7 @@ class Node:
             self.top = (self.x, self.y + h/2 + 10)
             self.right = (self.x + w/2 + 10, self.y)
             self.bottom = (self.x, self.y - h/2 - 10)
-            self.id = self.canvas.create_rectangle(self.bbox[0]-10, self.bbox[1]-10, self.bbox[2]+10, self.bbox[3]+10, fill='white')
+            self.id = self.canvas.create_rectangle(self.bbox[0]-10, self.bbox[1]-10, self.bbox[2]+10, self.bbox[3]+10, fill=fill_color)
             
         self.canvas.tag_raise(self.text_id)
         self.canvas.tag_bind(self.id, '<Button-3>', self.click)
@@ -127,7 +130,7 @@ class App:
         # check all places of incoming arcs whether they satisfy the token count (arc weight)
         while active and counter < len(trans.in_arcs):
             placeName = str(list(trans.in_arcs)[counter]).split("->")[0]
-            if self.places[placeName]["tokens"] < list(trans.in_arcs)[counter].weight:
+            if self.places[placeName]["gui_object"] is not None and self.places[placeName]["tokens"] < list(trans.in_arcs)[counter].weight:
                 active = False
             counter += 1
 
@@ -138,15 +141,14 @@ class App:
 
         # First, iterate through all transitions and determine all that COULD be fired
         for trans in self.transitions:
-            active = self.isActive(self.transitions[trans]["pm4py_object"])
-
-            if active:
-                actives.append(self.transitions[trans]["pm4py_object"])
+            if self.transitions[trans]["gui_object"] is not None:
+                if self.isActive(self.transitions[trans]["pm4py_object"]):
+                    actives.append(self.transitions[trans]["pm4py_object"])
 
         # fire as many transitions as possible
         while len(actives) > 0:
             # choose a random transition
-            prioritized = [trans for trans in actives if self.transitions[str(trans)]["gui_object"].selected]
+            prioritized = [trans for trans in actives if self.transitions[str(trans)]["gui_object"] is not None and self.transitions[str(trans)]["gui_object"].selected]
 
             if prioritized:
                 chosenTrans = rng.choice(prioritized)
@@ -157,20 +159,22 @@ class App:
             # Then, iterate through all connected places and consume their tokens
             for inArc in chosenTrans.in_arcs:
                 placeName = str(inArc).split("->")[0]
-                self.places[placeName]["tokens"] -= inArc.weight
-                self.canvas.itemconfig( self.places[placeName]["gui_object"].text_id, 
-                                        text=str(self.places[placeName]["tokens"]) if self.places[placeName]["tokens"] > 0 else "")
+                if self.places[placeName]["gui_object"] is not None:
+                    self.places[placeName]["tokens"] -= inArc.weight
+                    self.canvas.itemconfig( self.places[placeName]["gui_object"].text_id, 
+                                            text=str(self.places[placeName]["tokens"]) if self.places[placeName]["tokens"] > 0 else "")
 
-                # After consuming the tokens, the remaining transitions connected to this place need to be reevaluated (if they are still active, since the token count has changed)
-                for outArc in self.places[placeName]["pm4py_object"].out_arcs:
-                    transName = str(outArc).split("->")[1]
-                    otherTrans = self.transitions[transName]["pm4py_object"]
-                    if transName != str(chosenTrans) and not self.isActive(otherTrans) and otherTrans in actives:
-                        actives.remove(otherTrans)
+                    # After consuming the tokens, the remaining transitions connected to this place need to be reevaluated (if they are still active, since the token count has changed)
+                    for outArc in self.places[placeName]["pm4py_object"].out_arcs:
+                        transName = str(outArc).split("->")[1]
+                        otherTrans = self.transitions[transName]["pm4py_object"]
+                        if transName != str(chosenTrans) and chosenTrans in self.transitions and not self.isActive(otherTrans) and otherTrans in actives:
+                            actives.remove(otherTrans)
 
-                # Finally, new tokens are created for all outgoing places connected to the firing transition
-                for outArc in chosenTrans.out_arcs:
-                    placeName = str(outArc).split("->")[1]
+            # Finally, new tokens are created for all outgoing places connected to the firing transition
+            for outArc in chosenTrans.out_arcs:
+                placeName = str(outArc).split("->")[1]
+                if self.places[placeName]["gui_object"] is not None:
                     self.places[placeName]["tokens"] += outArc.weight
                     self.canvas.itemconfig( self.places[placeName]["gui_object"].text_id, 
                                             text=str(self.places[placeName]["tokens"]) if self.places[placeName]["tokens"] > 0 else "")
@@ -183,7 +187,7 @@ class App:
         actives = []
         
         for trans in self.transitions:
-            if self.isAlreadyPlaced(trans):
+            if self.placementAlreadyCalculated(trans):
                 self.transitions[trans]["gui_object"].selected = False
                 active = self.isActive(self.transitions[trans]["pm4py_object"])
 
@@ -212,16 +216,16 @@ class App:
             else:
                 outNode = self.places[outName]["pm4py_object"]
 
-            if not self.isAlreadyPlaced(outName):
+            if not self.placementAlreadyCalculated(outName):
                 self.getPlacements(outNode, col+1)
 
     def correctTransitionPlacement(self):
         for trans in self.transitions:
-            if self.isAlreadyPlaced(trans):
+            if self.placementAlreadyCalculated(trans):
                 x, _ = self.getPlacement(trans)
                 #newX = (np.average([self.getPlacement(str(arc).split("->")[0])[0] for arc in self.transitions[trans]["pm4py_object"].in_arcs]) + 
                 #np.average([self.getPlacement(str(arc).split("->")[1])[0] for arc in self.transitions[trans]["pm4py_object"].out_arcs])) / 2
-                newX = np.min([self.getPlacement(str(arc).split("->")[0])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].in_arcs if self.isAlreadyPlaced(str(x).split("->")[0])]] + [self.getPlacement(str(arc).split("->")[1])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].out_arcs if self.isAlreadyPlaced(str(x).split("->")[1])]]) + 1
+                newX = np.min([self.getPlacement(str(arc).split("->")[0])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].in_arcs if self.placementAlreadyCalculated(str(x).split("->")[0])]] + [self.getPlacement(str(arc).split("->")[1])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].out_arcs if self.placementAlreadyCalculated(str(x).split("->")[1])]]) + 1
                 
                 self.placements[x].remove(trans)
                 self.placements[int(newX)].append(trans)
@@ -233,7 +237,7 @@ class App:
 
         return col, self.placements[col].index(nodeName)
     
-    def isAlreadyPlaced(self, nodeName):
+    def placementAlreadyCalculated(self, nodeName):
         col = 0
         while col in self.placements.keys() and nodeName not in self.placements[col]:
             col += 1
@@ -264,15 +268,21 @@ class App:
         self.getPlacements(self.places["start"]["pm4py_object"], 0)
         self.correctTransitionPlacement()
         
+        badPlaces = []
         for place in self.places:
-            if self.isAlreadyPlaced(place):
+            if self.placementAlreadyCalculated(place):
                 x, y = self.getPlacement(place)
-                self.places[place]["gui_object"] = Node(self.canvas, x * self.distanceFactorX + self.offsetX, y * self.distanceFactorY + self.offsetY, str(self.places[place]["tokens"]) if self.places[place]["tokens"] > 0 else "", "circle")
-        
+                self.places[place]["gui_object"] = Node(self.canvas, x * self.distanceFactorX + self.offsetX, y * self.distanceFactorY + self.offsetY, str(self.places[place]["tokens"]) if self.places[place]["tokens"] > 0 else "", place, "circle")
+            else:
+                badPlaces.append(place)
+
+        badTransitions = []
         for trans in self.transitions:
-            if self.isAlreadyPlaced(trans):
+            if self.placementAlreadyCalculated(trans):
                 x, y = self.getPlacement(trans)
-                self.transitions[trans]["gui_object"] = Node(self.canvas, x * self.distanceFactorX + self.offsetX, y * self.distanceFactorY + self.offsetY, trans.split("'")[1], "rectangle")
+                self.transitions[trans]["gui_object"] = Node(self.canvas, x * self.distanceFactorX + self.offsetX, y * self.distanceFactorY + self.offsetY, trans.split("'")[1], trans, "rectangle")
+            else:
+                badTransitions.append(trans)
 
         self.arcs = []
         for arc in arcs:
@@ -299,11 +309,14 @@ import os
 if __name__ == "__main__":
     test = os.getcwd()
 
-    dataframe = pd.read_csv("data/running-example.csv", sep=';')
+    """dataframe = pd.read_csv("data/running-example.csv", sep=';')
     dataframe["Timestamp"] = pd.to_datetime(dataframe["Timestamp"], format="%d-%m-%Y:%H.%M")
     dataframe = pm4py.format_dataframe(dataframe, case_id='Case ID', activity_key='Activity', timestamp_key='Timestamp')
-    event_log = pm4py.convert_to_event_log(dataframe)
+    event_log = pm4py.convert_to_event_log(dataframe)"""
+
     event_log = pm4py.read_xes("data/Road_Traffic_Fine_Management_Process.xes.gz")
+    event_log["time:timestamp"] = pd.to_datetime(event_log["time:timestamp"], utc=True)
+    dataframe = pm4py.format_dataframe(event_log, case_id="case:concept:name", activity_key="concept:name", timestamp_key="time:timestamp")
     petri, im, fm = pm4py.discover_petri_net_alpha(event_log)
 
     placesDict = dict()
