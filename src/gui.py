@@ -124,7 +124,7 @@ class Arrow:
 
 class App:
     def isActive(self, trans):
-        active = True
+        active = len(trans.in_arcs) > 0
         counter = 0
 
         # check all places of incoming arcs whether they satisfy the token count (arc weight)
@@ -204,7 +204,6 @@ class App:
 
             
     def getPlacements(self, currentNode, col):
-        print(currentNode, col)
         if col not in self.placements.keys():
             self.placements[col] = []
 
@@ -219,6 +218,17 @@ class App:
             if not self.placementAlreadyCalculated(outName):
                 self.getPlacements(outNode, col+1)
 
+        for outArc in currentNode.in_arcs:
+            outName = str(outArc).split("->")[0]
+            if outName in self.transitions.keys():
+                outNode = self.transitions[outName]["pm4py_object"]
+            else:
+                outNode = self.places[outName]["pm4py_object"]
+
+            if not self.placementAlreadyCalculated(outName):
+                self.getPlacements(outNode, max(col-1, 0))
+
+
     def correctTransitionPlacement(self):
         for trans in self.transitions:
             if self.placementAlreadyCalculated(trans):
@@ -228,6 +238,8 @@ class App:
                 newX = np.min([self.getPlacement(str(arc).split("->")[0])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].in_arcs if self.placementAlreadyCalculated(str(x).split("->")[0])]] + [self.getPlacement(str(arc).split("->")[1])[0] for arc in [x for x in self.transitions[trans]["pm4py_object"].out_arcs if self.placementAlreadyCalculated(str(x).split("->")[1])]]) + 1
                 
                 self.placements[x].remove(trans)
+                if int(newX) not in self.placements.keys():
+                    self.placements[int(newX)] = []
                 self.placements[int(newX)].append(trans)
 
     def getPlacement(self, nodeName):
