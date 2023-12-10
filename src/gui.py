@@ -263,6 +263,8 @@ class App:
                 
         
     def draw_components(self):
+        self.getPlacements(self.places["start"]["pm4py_object"], 0)
+        self.correctTransitionPlacement()
         badPlaces = []
         for place in self.places:
             if self.placementAlreadyCalculated(place):
@@ -288,8 +290,6 @@ class App:
                 self.arcs.append(Arrow(self.canvas, src, dst))
     
         self.colorActives()
-        self.getPlacements(self.places["start"]["pm4py_object"], 0)
-        self.correctTransitionPlacement()
                 
 
     def browseFiles(self):
