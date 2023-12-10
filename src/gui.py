@@ -2,6 +2,11 @@ import tkinter as tk
 import math
 import re
 import random as rng
+import pm4py
+import pandas as pd
+from tkinter import filedialog
+import ttkbootstrap as ttk
+import ttkbootstrap.constants as bt_constants
 import numpy as np
 
 class Node:
@@ -256,30 +261,8 @@ class App:
 
         return col in self.placements.keys()
                 
-
-    def __init__(self, places, transitions, arcs):
-        self.placements = dict()
-
-        self.root = tk.Tk()
-        self.canvas = tk.Canvas(self.root, width=1920, height=1080)
-        self.canvas.pack()
-
-        self.play_button = tk.Button(self.root, text="plays", width=10, height=5, bd='50', command=self.step)
-        self.play_button.place(x=40, y=100)
-
-
-
-        self.places = places
-        self.transitions = transitions
-
-        self.offsetX = 100
-        self.offsetY = 100
-        self.distanceFactorX = 130
-        self.distanceFactorY = 100
-
-        self.getPlacements(self.places["start"]["pm4py_object"], 0)
-        self.correctTransitionPlacement()
         
+    def draw_components(self):
         badPlaces = []
         for place in self.places:
             if self.placementAlreadyCalculated(place):
@@ -297,15 +280,58 @@ class App:
                 badTransitions.append(trans)
 
         self.arcs = []
-        for arc in arcs:
+        for arc in self.arcDict:
             src = self.transitions[arc["source"]]["gui_object"] if arc["source"] in self.transitions.keys() else self.places[arc["source"]]["gui_object"]
             dst = self.transitions[arc["dest"]]["gui_object"] if arc["dest"] in self.transitions.keys() else self.places[arc["dest"]]["gui_object"]
 
             if src is not None and dst is not None:
                 self.arcs.append(Arrow(self.canvas, src, dst))
-
-            
+    
         self.colorActives()
+        self.getPlacements(self.places["start"]["pm4py_object"], 0)
+        self.correctTransitionPlacement()
+                
+
+    def browseFiles(self):
+        self.filePath = filedialog.askopenfilename(initialdir = ".",
+                                          title = "Select a File",
+                                          filetypes = (("CSV files",
+                                                        "*.csv*"),
+                                                       ("XES files",
+                                                        "*.xes*")))
+        self.redrawPetriNet()
+        
+
+    def redrawPetriNet(self):
+        self.canvas.delete('all')
+        self.compute_gui_components(self.filePath)
+        self.draw_components()
+
+
+    def __init__(self):
+        self.placements = dict()
+        self.offsetX = 100
+        self.offsetY = 100
+        self.distanceFactorX = 130
+        self.distanceFactorY = 100
+        
+        self.places = []
+        self.transitions = []
+        self.arcs = []
+        
+        self.root = tk.Tk()
+        self.canvas = tk.Canvas(self.root, width=1920, height=1080)
+        self.canvas.pack()
+
+        self.play_button = ttk.Button(self.root, text="Step", width=5, command=self.step, bootstyle=bt_constants.SUCCESS)
+        self.play_button.place(x=10, y=10)
+
+
+        self.button_explore = ttk.Button(self.root, text = "Browse Files", width=10, command = self.browseFiles, bootstyle=bt_constants.PRIMARY) 
+        self.button_explore.place(x=10, y=55)
+
+        self.button_reset = ttk.Button(self.root, text = "Reset", width=10, command = self.redrawPetriNet, bootstyle=bt_constants.DANGER) 
+        self.button_reset.place(x=10, y=100)
 
         self.root.after(100, self.update)
         self.root.mainloop()
@@ -315,41 +341,35 @@ class App:
             arc.update()
         self.root.after(100, self.update)
 
-import pm4py
-import pandas as pd
-import os
+
+    def compute_gui_components(self, path = "data/running-example.csv"):
+        dataframe = pd.read_csv(path, sep=';')
+        dataframe["Timestamp"] = pd.to_datetime(dataframe["Timestamp"], format="%d-%m-%Y:%H.%M")
+        dataframe = pm4py.format_dataframe(dataframe, case_id='Case ID', activity_key='Activity', timestamp_key='Timestamp')
+        petri, im, fm = pm4py.discover_petri_net_alpha(dataframe)
+
+        placesDict = dict()
+        for place in petri.places:
+            placesDict[str(place)] = {
+                "pm4py_object": place,
+                "gui_object": None,
+                "tokens": dict(im)[place] if place in dict(im).keys() else 0
+            }
+
+
+        transDict = dict()
+        for trans in petri.transitions:
+            transDict[str(trans)] = {
+                "pm4py_object": trans,
+                "gui_object": None,
+            }
+
+        arcs = [{"source": str(x).split("->")[0], "dest": str(x).split("->")[1]} for x in petri.arcs]
+        self.places = placesDict.copy()
+        self.transitions = transDict.copy()
+        self.arcDict = arcs.copy()
+
+
+
 if __name__ == "__main__":
-    test = os.getcwd()
-
-    """dataframe = pd.read_csv("data/running-example.csv", sep=';')
-    dataframe["Timestamp"] = pd.to_datetime(dataframe["Timestamp"], format="%d-%m-%Y:%H.%M")
-    dataframe = pm4py.format_dataframe(dataframe, case_id='Case ID', activity_key='Activity', timestamp_key='Timestamp')
-    event_log = pm4py.convert_to_event_log(dataframe)"""
-
-    event_log = pm4py.read_xes("data/Road_Traffic_Fine_Management_Process.xes.gz")
-    event_log["time:timestamp"] = pd.to_datetime(event_log["time:timestamp"], utc=True)
-    dataframe = pm4py.format_dataframe(event_log, case_id="case:concept:name", activity_key="concept:name", timestamp_key="time:timestamp")
-    petri, im, fm = pm4py.discover_petri_net_alpha(event_log)
-
-    placesDict = dict()
-    for place in petri.places:
-        placesDict[str(place)] = {
-            "pm4py_object": place,
-            "gui_object": None,
-            "tokens": dict(im)[place] if place in dict(im).keys() else 0
-        }
-
-
-    transDict = dict()
-    for trans in petri.transitions:
-        transDict[str(trans)] = {
-            "pm4py_object": trans,
-            "gui_object": None,
-        }
-
-    arcs = [{"source": str(x).split("->")[0], "dest": str(x).split("->")[1]} for x in petri.arcs]
-
-    App(placesDict.copy(), transDict.copy(), arcs.copy())
-
-
-
+    app = App()
