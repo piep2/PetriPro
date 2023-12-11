@@ -198,8 +198,9 @@ class App:
         self.colorActives()
         if hasattr(self, 'case_activities') and len(self.case_activities) > 0:
             self.selectActiveByCase()
-        else:
+        elif hasattr(self, 'case_activities') and len(self.case_activities) == 0 and len(actives) > 0:
             messagebox.showerror("Error", "Selected Trace has ended, but there are still active transitions.")
+
         self.canvas.update()
 
     def colorActives(self):
@@ -277,6 +278,7 @@ class App:
                 
         
     def draw_components(self):
+        self.getPlacements(self.places["start"]["pm4py_object"], 0)
         badPlaces = []
         for place in self.places:
             if self.placementAlreadyCalculated(place):
@@ -302,8 +304,6 @@ class App:
                 self.arcs.append(Arrow(self.canvas, src, dst))
     
         self.colorActives()
-        self.getPlacements(self.places["start"]["pm4py_object"], 0)
-        self.correctTransitionPlacement()
                 
 
     def browseFiles(self):
@@ -313,21 +313,58 @@ class App:
                                                         "*.csv*"),
                                                        ("XES files",
                                                         "*.xes*")))
+        if ".csv" in self.filePath:
+            self.dataframe = pd.read_csv(self.filePath, sep=';')
+        else:
+            self.dataframe = pm4py.read_xes(self.filePath)
         
-        self.redrawPetriNet()
-        self.dropdown_case['values'] = list(pd.unique(self.dataframe["case:concept:name"]))
+        newWindow = tk.Toplevel(self.root)
+        newWindow.geometry("200x100")
+
+        columns = self.dataframe.columns
+
+        self.selectedCaseid = tk.StringVar()
+        self.selectedActivity = tk.StringVar()
+        self.selectedTimestamp = tk.StringVar()
+
+        self.selectedCaseid.set("Select the case id column")
+        self.selectedActivity.set("Select the activity column")
+        self.selectedTimestamp.set("Select the timestamp column")
+
+        dropdownCaseid = tk.OptionMenu(newWindow, self.selectedCaseid, *columns)
+        dropdownActivity = tk.OptionMenu(newWindow, self.selectedActivity, *columns)
+        dropdownTimestamp = tk.OptionMenu(newWindow, self.selectedTimestamp, *columns)
+
+        dropdownCaseid.config(width=30)
+        dropdownActivity.config(width=30)
+        dropdownTimestamp.config(width=30)
+
+        dropdownCaseid.pack()
+        dropdownActivity.pack()
+        dropdownTimestamp.pack()
+
+        submitButton = tk.Button(newWindow, text="Submit", command=self.redrawPetriNet)
+        submitButton.pack()
+
         
 
     def redrawPetriNet(self):
+        self.dropdown_case['values'] = list(pd.unique(self.dataframe[self.selectedCaseid.get()]))
+        self.placements = dict()
         self.canvas.delete('all')
-        self.compute_gui_components(self.filePath)
+        self.compute_gui_components()
         self.draw_components()
+        self.canvas.update()
 
     def selectCase(self, event):
+        caseid = self.selectedCaseid.get()
+        activity = self.selectedActivity.get()
+        timestamp = self.selectedTimestamp.get()
         case = event.widget.get()
-        if case in list(pd.unique(self.dataframe["case:concept:name"])):
+        self.dataframe[caseid] = self.dataframe[caseid].astype(str)
+        if case in list(pd.unique(self.dataframe[caseid])):
             self.redrawPetriNet()
-            self.case_activities = self.dataframe[self.dataframe["case:concept:name"] == case].sort_values("time:timestamp")["concept:name"].to_list()
+            self.case_activities = self.dataframe[self.dataframe[caseid] == case].sort_values(timestamp)[activity].to_list()
             self.selectActiveByCase()
             self.canvas.update()
 
@@ -396,10 +433,12 @@ class App:
         self.root.after(100, self.update)
 
 
-    def compute_gui_components(self, path = "data/running-example.csv"):
-        dataframe = pd.read_csv(path, sep=',')
-        dataframe["time:timestamp"] = pd.to_datetime(dataframe["time:timestamp"], utc=True)
-        self.dataframe = pm4py.format_dataframe(dataframe, case_id='case:concept:name', activity_key='concept:name', timestamp_key='time:timestamp')
+    def compute_gui_components(self):
+        caseid = self.selectedCaseid.get()
+        activity = self.selectedActivity.get()
+        timestamp = self.selectedTimestamp.get()
+        self.dataframe[timestamp] = pd.to_datetime(self.dataframe[timestamp], format="%d-%m-%Y:%H.%M")
+        self.dataframe = pm4py.format_dataframe(self.dataframe, case_id=caseid, activity_key=activity, timestamp_key=timestamp)
         petri, im, fm = pm4py.discover_petri_net_alpha(self.dataframe)
 
         placesDict = dict()
