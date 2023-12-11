@@ -264,7 +264,6 @@ class App:
         
     def draw_components(self):
         self.getPlacements(self.places["start"]["pm4py_object"], 0)
-        self.correctTransitionPlacement()
         badPlaces = []
         for place in self.places:
             if self.placementAlreadyCalculated(place):
@@ -293,7 +292,6 @@ class App:
                 
 
     def browseFiles(self):
-        self.placements = dict()
         self.filePath = filedialog.askopenfilename(initialdir = ".",
                                           title = "Select a File",
                                           filetypes = (("CSV files",
@@ -335,7 +333,7 @@ class App:
         
 
     def redrawPetriNet(self):
-        print(f"CaseID: {self.selectedCaseid.get()}; Activity: {self.selectedActivity.get()}; Timestamp: {self.selectedTimestamp.get()}")
+        self.placements = dict()
         self.canvas.delete('all')
         self.compute_gui_components()
         self.draw_components()
