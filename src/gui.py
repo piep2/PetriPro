@@ -60,17 +60,18 @@ class Node:
         
 
     def click(self, event):
-        if self.active:
-            self.canvas.itemconfig(self.id, outline="red")
-        else:
-            self.canvas.itemconfig(self.id, outline="black")
+        if self.shape == "rectangle":
+            if self.active:
+                self.canvas.itemconfig(self.id, outline="red")
+            else:
+                self.canvas.itemconfig(self.id, outline="black")
 
-        if self.selected:
-            self.canvas.itemconfig(self.id, fill="white")
-            self.selected = False
-        else:
-            self.canvas.itemconfig(self.id, fill="#FFFF00")
-            self.selected = True
+            if self.selected:
+                self.canvas.itemconfig(self.id, fill="white")
+                self.selected = False
+            else:
+                self.canvas.itemconfig(self.id, fill="#FFFF00")
+                self.selected = True
 
 class Arrow:
     def __init__(self, canvas, node1, node2):
