@@ -74,11 +74,12 @@ class Node:
                 self.selected = True
 
 class Arrow:
-    def __init__(self, canvas, node1, node2):
+    def __init__(self, canvas, node1, node2, weight):
         self.canvas = canvas
         self.node1 = node1
         self.node2 = node2
         self.id = self.canvas.create_line(self.node1.x, self.node1.y, self.node2.x, self.node2.y, arrow=tk.LAST)
+        self.text_id = self.canvas.create_text((self.node1.x + self.node2.x) / 2, (self.node1.y + self.node2.y) / 2, text=str(weight) if weight > 1 else "", fill="black")
 
     def update(self):
         dx = self.node2.x - self.node1.x
@@ -129,6 +130,7 @@ class Arrow:
                 y2 = self.node2.bottom[1]
 
         self.canvas.coords(self.id, x1, y1, x2, y2)
+        self.canvas.coords(self.text_id, (x1 + x2) / 2, (y1 + y2) / 2)
 
 class App:
     def isActive(self, trans):
@@ -302,7 +304,7 @@ class App:
             dst = self.transitions[arc["dest"]]["gui_object"] if arc["dest"] in self.transitions.keys() else self.places[arc["dest"]]["gui_object"]
 
             if src is not None and dst is not None:
-                self.arcs.append(Arrow(self.canvas, src, dst))
+                self.arcs.append(Arrow(self.canvas, src, dst, arc["weight"]))
     
         self.colorActives()
                 
@@ -466,7 +468,7 @@ class App:
                 "gui_object": None,
             }
 
-        arcs = [{"source": str(x).split("->")[0], "dest": str(x).split("->")[1]} for x in petri.arcs]
+        arcs = [{"source": str(x).split("->")[0], "dest": str(x).split("->")[1], "weight": x.weight} for x in petri.arcs]
         self.places = placesDict.copy()
         self.transitions = transDict.copy()
         self.arcDict = arcs.copy()
