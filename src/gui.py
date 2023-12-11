@@ -263,6 +263,7 @@ class App:
                 
         
     def draw_components(self):
+        self.getPlacements(self.places["start"]["pm4py_object"], 0)
         badPlaces = []
         for place in self.places:
             if self.placementAlreadyCalculated(place):
@@ -288,8 +289,6 @@ class App:
                 self.arcs.append(Arrow(self.canvas, src, dst))
     
         self.colorActives()
-        self.getPlacements(self.places["start"]["pm4py_object"], 0)
-        self.correctTransitionPlacement()
                 
 
     def browseFiles(self):
@@ -299,12 +298,44 @@ class App:
                                                         "*.csv*"),
                                                        ("XES files",
                                                         "*.xes*")))
-        self.redrawPetriNet()
+        if ".csv" in self.filePath:
+            self.dataframe = pd.read_csv(self.filePath, sep=';')
+        else:
+            self.dataframe = pm4py.read_xes(self.filePath)
+        
+        newWindow = tk.Toplevel(self.root)
+        newWindow.geometry("200x100")
+
+        columns = self.dataframe.columns
+
+        self.selectedCaseid = tk.StringVar()
+        self.selectedActivity = tk.StringVar()
+        self.selectedTimestamp = tk.StringVar()
+
+        self.selectedCaseid.set("Select the case id column")
+        self.selectedActivity.set("Select the activity column")
+        self.selectedTimestamp.set("Select the timestamp column")
+
+        dropdownCaseid = tk.OptionMenu(newWindow, self.selectedCaseid, *columns)
+        dropdownActivity = tk.OptionMenu(newWindow, self.selectedActivity, *columns)
+        dropdownTimestamp = tk.OptionMenu(newWindow, self.selectedTimestamp, *columns)
+
+        dropdownCaseid.config(width=30)
+        dropdownActivity.config(width=30)
+        dropdownTimestamp.config(width=30)
+
+        dropdownCaseid.pack()
+        dropdownActivity.pack()
+        dropdownTimestamp.pack()
+
+        submitButton = tk.Button(newWindow, text="Submit", command=self.redrawPetriNet)
+        submitButton.pack()
         
 
     def redrawPetriNet(self):
+        self.placements = dict()
         self.canvas.delete('all')
-        self.compute_gui_components(self.filePath)
+        self.compute_gui_components()
         self.draw_components()
 
 
@@ -342,11 +373,13 @@ class App:
         self.root.after(100, self.update)
 
 
-    def compute_gui_components(self, path = "data/running-example.csv"):
-        dataframe = pd.read_csv(path, sep=';')
-        dataframe["Timestamp"] = pd.to_datetime(dataframe["Timestamp"], format="%d-%m-%Y:%H.%M")
-        dataframe = pm4py.format_dataframe(dataframe, case_id='Case ID', activity_key='Activity', timestamp_key='Timestamp')
-        petri, im, fm = pm4py.discover_petri_net_alpha(dataframe)
+    def compute_gui_components(self):
+        caseid = self.selectedCaseid.get()
+        activity = self.selectedActivity.get()
+        timestamp = self.selectedTimestamp.get()
+        self.dataframe[timestamp] = pd.to_datetime(self.dataframe[timestamp], format="%d-%m-%Y:%H.%M")
+        self.dataframe = pm4py.format_dataframe(self.dataframe, case_id=caseid, activity_key=activity, timestamp_key=timestamp)
+        petri, im, fm = pm4py.discover_petri_net_alpha(self.dataframe)
 
         placesDict = dict()
         for place in petri.places:
