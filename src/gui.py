@@ -314,7 +314,12 @@ class App:
                                                        ("XES files",
                                                         "*.xes*")))
         if ".csv" in self.filePath:
-            self.dataframe = pd.read_csv(self.filePath, sep=';')
+            with open(self.filePath, 'r') as file:
+                line = file.readline()
+                semi_count = line.count(";")
+                comma_count = line.count(",")
+                sep = ";" if semi_count >= comma_count else ","
+            self.dataframe = pd.read_csv(self.filePath, sep=sep)
         else:
             self.dataframe = pm4py.read_xes(self.filePath)
         
@@ -437,7 +442,7 @@ class App:
         caseid = self.selectedCaseid.get()
         activity = self.selectedActivity.get()
         timestamp = self.selectedTimestamp.get()
-        self.dataframe[timestamp] = pd.to_datetime(self.dataframe[timestamp], format="%d-%m-%Y:%H.%M")
+        self.dataframe[timestamp] = pd.to_datetime(self.dataframe[timestamp], utc=True)
         self.dataframe = pm4py.format_dataframe(self.dataframe, case_id=caseid, activity_key=activity, timestamp_key=timestamp)
         petri, im, fm = pm4py.discover_petri_net_alpha(self.dataframe)
 
