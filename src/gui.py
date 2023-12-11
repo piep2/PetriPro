@@ -357,12 +357,15 @@ class App:
         
 
     def redrawPetriNet(self):
-        self.dropdown_case['values'] = list(pd.unique(self.dataframe[self.selectedCaseid.get()]))
-        self.placements = dict()
-        self.canvas.delete('all')
-        self.compute_gui_components()
-        self.draw_components()
-        self.canvas.update()
+        if self.selectedCaseid.get() != "Select the case id column" \
+            and self.selectedActivity.get() != "Select the activity column" \
+            and self.selectedTimestamp.get() != "Select the timestamp column":
+            self.dropdown_case['values'] = list(pd.unique(self.dataframe[self.selectedCaseid.get()]))
+            self.placements = dict()
+            self.canvas.delete('all')
+            self.compute_gui_components()
+            self.draw_components()
+            self.canvas.update()
 
     def selectCase(self, event):
         caseid = self.selectedCaseid.get()
