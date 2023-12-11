@@ -293,6 +293,7 @@ class App:
                 
 
     def browseFiles(self):
+        self.placements = dict()
         self.filePath = filedialog.askopenfilename(initialdir = ".",
                                           title = "Select a File",
                                           filetypes = (("CSV files",
