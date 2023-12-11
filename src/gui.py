@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 import math
 import re
 import random as rng
@@ -59,16 +60,18 @@ class Node:
         
 
     def click(self, event):
-        if self.selected and self.active:
-            self.canvas.itemconfig(self.id, outline="red")
-            self.selected=False
-        elif self.selected:
-            self.canvas.itemconfig(self.id, outline="black")
-            self.selected=False
-        else:
-            self.canvas.itemconfig(self.id, outline="blue")
-            self.selected=True
+        if self.shape == "rectangle":
+            if self.active:
+                self.canvas.itemconfig(self.id, outline="red")
+            else:
+                self.canvas.itemconfig(self.id, outline="black")
 
+            if self.selected:
+                self.canvas.itemconfig(self.id, fill="white")
+                self.selected = False
+            else:
+                self.canvas.itemconfig(self.id, fill="#FFFF00")
+                self.selected = True
 
 class Arrow:
     def __init__(self, canvas, node1, node2):
@@ -173,7 +176,7 @@ class App:
                     for outArc in self.places[placeName]["pm4py_object"].out_arcs:
                         transName = str(outArc).split("->")[1]
                         otherTrans = self.transitions[transName]["pm4py_object"]
-                        if transName != str(chosenTrans) and chosenTrans in self.transitions and not self.isActive(otherTrans) and otherTrans in actives:
+                        if transName != str(chosenTrans) and otherTrans in actives:
                             actives.remove(otherTrans)
 
             # Finally, new tokens are created for all outgoing places connected to the firing transition
@@ -184,8 +187,21 @@ class App:
                     self.canvas.itemconfig( self.places[placeName]["gui_object"].text_id, 
                                             text=str(self.places[placeName]["tokens"]) if self.places[placeName]["tokens"] > 0 else "")
 
+        for trans in self.transitions:
+            guiobject = self.transitions[trans]["gui_object"]
+            self.canvas.itemconfig(guiobject.id, outline="black")
+            self.canvas.itemconfig(guiobject.id, fill="white")
+            guiobject.selected = False
+            guiobject.active = False
+
+
         # color the new actives and refresh the canvas with token counts
         self.colorActives()
+        if hasattr(self, 'case_activities') and len(self.case_activities) > 0:
+            self.selectActiveByCase()
+        elif hasattr(self, 'case_activities') and len(self.case_activities) == 0 and len(actives) > 0:
+            messagebox.showerror("Error", "Selected Trace has ended, but there are still active transitions.")
+
         self.canvas.update()
 
     def colorActives(self):
@@ -299,7 +315,12 @@ class App:
                                                        ("XES files",
                                                         "*.xes*")))
         if ".csv" in self.filePath:
-            self.dataframe = pd.read_csv(self.filePath, sep=';')
+            with open(self.filePath, 'r') as file:
+                line = file.readline()
+                semi_count = line.count(";")
+                comma_count = line.count(",")
+                sep = ";" if semi_count >= comma_count else ","
+            self.dataframe = pd.read_csv(self.filePath, sep=sep)
         else:
             self.dataframe = pm4py.read_xes(self.filePath)
         
@@ -330,14 +351,53 @@ class App:
 
         submitButton = tk.Button(newWindow, text="Submit", command=self.redrawPetriNet)
         submitButton.pack()
+
         
 
     def redrawPetriNet(self):
+        self.dropdown_case['values'] = list(pd.unique(self.dataframe[self.selectedCaseid.get()]))
         self.placements = dict()
         self.canvas.delete('all')
         self.compute_gui_components()
         self.draw_components()
+        self.canvas.update()
 
+    def selectCase(self, event):
+        caseid = self.selectedCaseid.get()
+        activity = self.selectedActivity.get()
+        timestamp = self.selectedTimestamp.get()
+        case = event.widget.get()
+        self.dataframe[caseid] = self.dataframe[caseid].astype(str)
+        if case in list(pd.unique(self.dataframe[caseid])):
+            self.redrawPetriNet()
+            self.case_activities = self.dataframe[self.dataframe[caseid] == case].sort_values(timestamp)[activity].to_list()
+            self.selectActiveByCase()
+            self.canvas.update()
+
+    def selectActiveByCase(self):
+        actives = []
+
+        # First, iterate through all transitions and determine all that COULD be fired
+        for trans in self.transitions:
+            if self.transitions[trans]["gui_object"] is not None:
+                if self.isActive(self.transitions[trans]["pm4py_object"]) and not self.transitions[trans]["gui_object"].selected:
+                    actives.append(trans)
+
+        counter = 0
+        fullname = f"({self.case_activities[0]}, '{self.case_activities[0]}')"
+        while len(self.case_activities) > 0 and fullname in actives:
+            print(f"Recolouring {fullname}")
+            #self.canvas.itemconfig(self.transitions[fullname]["gui_object"].id, fill = "#FFFF00")
+            #self.transitions[fullname]["gui_object"].selected = True
+            self.transitions[fullname]["gui_object"].click(None)
+            self.case_activities.remove(self.case_activities[0])
+            if len(self.case_activities) > 0:
+                fullname = f"({self.case_activities[0]}, '{self.case_activities[0]}')"
+            counter += 1
+
+        if counter == 0:
+            messagebox.showerror("Error", "Case could not be replayed")
+            
 
     def __init__(self):
         self.placements = dict()
@@ -364,6 +424,12 @@ class App:
         self.button_reset = ttk.Button(self.root, text = "Reset", width=10, command = self.redrawPetriNet, bootstyle=bt_constants.DANGER) 
         self.button_reset.place(x=10, y=100)
 
+        self.selected_case = tk.StringVar()
+        self.dropdown_case = ttk.Combobox(self.root, values=["<None>"], textvariable=self.selected_case)
+        self.dropdown_case["state"] = "readonly"
+        self.dropdown_case.bind("<<ComboboxSelected>>", self.selectCase)
+        self.dropdown_case.place(x=10, y=150)
+
         self.root.after(100, self.update)
         self.root.mainloop()
 
@@ -377,7 +443,7 @@ class App:
         caseid = self.selectedCaseid.get()
         activity = self.selectedActivity.get()
         timestamp = self.selectedTimestamp.get()
-        self.dataframe[timestamp] = pd.to_datetime(self.dataframe[timestamp], format="%d-%m-%Y:%H.%M")
+        self.dataframe[timestamp] = pd.to_datetime(self.dataframe[timestamp], utc=True)
         self.dataframe = pm4py.format_dataframe(self.dataframe, case_id=caseid, activity_key=activity, timestamp_key=timestamp)
         petri, im, fm = pm4py.discover_petri_net_alpha(self.dataframe)
 
